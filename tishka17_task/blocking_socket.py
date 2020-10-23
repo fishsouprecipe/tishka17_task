@@ -11,7 +11,8 @@ BUFFSIZE: int = 512
 
 class BlockingSocketEchoServer(BaseEchoServer):
     def send_to(self, conn: socket.socket, message: bytes) -> None:
-        conn.send(message)
+        with self.conn_locks[conn]:
+            conn.send(message)
 
     def recv_from(self, conn: socket.socket) -> bytes:
         return conn.recv(BUFFSIZE)

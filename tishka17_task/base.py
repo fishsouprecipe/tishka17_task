@@ -21,6 +21,7 @@ class BaseEchoServer(abc.ABC):
 
         self.lock: RLock = RLock()
         self.conns: MutableMapping[socket.socket, bytes] = weakref.WeakKeyDictionary()
+        self.conn_locks: MutableMapping[socket.socket, RLock] = weakref.WeakKeyDictionary()
         self._serving_event: Event = Event()
 
     @property
@@ -58,16 +59,10 @@ class BaseEchoServer(abc.ABC):
         pass
 
     def send_to_all(self, message: bytes) -> None:
-        with self.lock:
+        for conn in self.conns:
             threads: List[Thread] = []
-
-            for conn in self.conns:
-                t: Thread = Thread(target=self.send_to, args=(conn, message))
-                t.start()
-                threads.append(t)
-
-            for thread in threads:
-                t.join()
+            t: Thread = Thread(target=self.send_to, args=(conn, message))
+            t.start()
 
     def process_data(self, conn: socket.socket, data: bytes) -> None:
         if not self.serving:
@@ -113,6 +108,7 @@ class BaseEchoServer(abc.ABC):
             return
 
         self.conns[conn] = b''
+        self.conn_locks[conn] = RLock()
 
         t: Thread = Thread(target=self.handle, args=(conn, addr))
         t.start()
