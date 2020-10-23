@@ -3,6 +3,7 @@ import socket
 import weakref
 
 from typing import Tuple
+from typing import List
 from typing import MutableMapping
 
 from threading import Thread
@@ -58,8 +59,15 @@ class BaseEchoServer(abc.ABC):
 
     def send_to_all(self, message: bytes) -> None:
         with self.lock:
+            threads: List[Thread] = []
+
             for conn in self.conns:
-                self.send_to(conn, message)
+                t: Thread = Thread(target=self.send_to, args=(conn, message))
+                t.start()
+                threads.append(t)
+
+            for thread in threads:
+                t.join()
 
     def process_data(self, conn: socket.socket, data: bytes) -> None:
         if not self.serving:
