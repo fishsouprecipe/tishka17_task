@@ -1,1 +1,0 @@
-DEFAULT_BYTES_READ: int = 512

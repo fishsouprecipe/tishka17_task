@@ -1,11 +1,11 @@
 import time
 
 
-from tishka17_task.blocking_server import BlockingServer
+from tishka17_task import BlockingSocketEchoServer
 
 
 def main() -> int:
-    s: BlockingServer = BlockingServer("0.0.0.0", 2222)
+    s: BlockingSocketEchoServer = BlockingSocketEchoServer(2222)
 
     try:
         s.serve()
