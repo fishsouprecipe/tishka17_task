@@ -37,39 +37,48 @@ class BaseEchoServer(abc.ABC):
             e.clear()
 
     @abc.abstractmethod
-    def stop_serve(self) -> None: pass
+    def stop_serve(self) -> None:
+        pass
 
     @abc.abstractmethod
-    def send_to(self, conn: socket.socket, message: bytes) -> None: pass
+    def send_to(self, conn: socket.socket, message: bytes) -> None:
+        pass
 
     @abc.abstractmethod
-    def recv_from(self, conn: socket.socket) -> bytes: pass
+    def recv_from(self, conn: socket.socket) -> bytes:
+        pass
 
     @abc.abstractmethod
-    def close_conn(self, conn: socket.socket) -> None: pass
+    def close_conn(self, conn: socket.socket) -> None:
+        pass
 
     @abc.abstractmethod
-    def accept(self) -> Tuple[socket.socket, Addr]: pass
+    def accept(self) -> Tuple[socket.socket, Addr]:
+        pass
 
     def send_to_all(self, message: bytes) -> None:
-        for conn in self.conns:
-            self.send_to(conn, message)
+        with self.lock:
+            for conn in self.conns:
+                self.send_to(conn, message)
 
     def process_data(self, conn: socket.socket, data: bytes) -> None:
         if not self.serving:
             return
 
-        end_old_message, lf, start_new_message = data.partition(b'\n')
+        while True:
+            end_old_message, lf, start_new_message = data.partition(b'\n')
 
-        if lf:
-            message: bytes = self.conns[conn] + end_old_message + lf
+            if lf:
+                message: bytes = self.conns[conn] + end_old_message + lf
 
-            print(message)
-            self.send_to_all(message)
-            self.process_data(conn, start_new_message)
+                print(message)
+                self.send_to_all(message)
 
-        else:
-            self.conns[conn] += end_old_message
+                data = start_new_message
+
+            else:
+                self.conns[conn] += end_old_message
+                break
 
     def handle(self, conn: socket.socket, addr: Addr) -> None:
         try:
